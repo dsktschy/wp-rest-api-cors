@@ -1,21 +1,36 @@
 <?php
-$new_settings_field_id = 'access_control_allow_origin';
-function echo_input() {
-  global $new_settings_field_id;
-  $value = esc_html(get_option($new_settings_field_id));
-  echo "<input name=\"$new_settings_field_id\" id=\"$new_settings_field_id\" type=\"text\" value=\"$value\" class=\"regular-text code\">";
+$field_id_origin = 'access_control_allow_origin';
+$field_id_webhook = 'webhook_url';
+
+function echo_input(array $args) {
+  $id = $args['id'];
+  $value = esc_html(get_option($id));
+  echo "<input name=\"$id\" id=\"$id\" type=\"text\" value=\"$value\" class=\"regular-text code\">";
 }
 
-// WP REST APIへのリクエストを許可するオリジンを「設定」>「一般」画面から設定可能にする
+// 「設定」>「一般」>「WP REST APIへのリクエストを許可するオリジン」
+// 「設定」>「一般」>「保存時にリクエストを送るWebhookのURL」
 add_filter('admin_init', function() {
-  global $new_settings_field_id;
+  global $field_id_origin;
+  global $field_id_webhook;
   add_settings_field(
-    $new_settings_field_id,
+    $field_id_origin,
     'WP REST APIへのリクエストを許可するオリジン',
     'echo_input',
-    'general'
+    'general',
+    'default',
+    ['id' => $field_id_origin]
   );
-  register_setting('general', $new_settings_field_id);
+  add_settings_field(
+    $field_id_webhook,
+    '保存時にリクエストを送るWebhookのURL',
+    'echo_input',
+    'general',
+    'default',
+    ['id' => $field_id_webhook]
+  );
+  register_setting('general', $field_id_origin);
+  register_setting('general', $field_id_webhook);
 });
 
 // WP REST APIを利用するリクエストでのみ発火するフック
@@ -25,7 +40,7 @@ add_action('rest_api_init', function() {
   remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
   // rest_pre_serve_requestフィルターに新しく関数を設定
   add_filter('rest_pre_serve_request', function($value) {
-    global $new_settings_field_id;
+    global $field_id_origin;
     // リクエスト元のオリジンを取得
     $origin = get_http_origin();
     // リクエスト許可ドメイン一覧の中にリクエスト元のオリジンが存在する場合
@@ -34,7 +49,7 @@ add_action('rest_api_init', function() {
       // リクエスト許可ドメインのリスト
       // 「設定」>「一般」>「WP REST APIへのリクエストを許可するオリジン」
       // $originは末尾の/が無いことに注意
-      explode(',', str_replace(' ', '', get_option($new_settings_field_id)))
+      explode(',', str_replace(' ', '', get_option($field_id_origin)))
     )) {
       // リクエスト元のオリジンをAccess-Control-Allow-Originに設定
       header('Access-Control-Allow-Origin: ' . esc_url_raw($origin));
