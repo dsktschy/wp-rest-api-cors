@@ -59,3 +59,17 @@ add_action('rest_api_init', function() {
     return $value;
   });
 }, 15);
+
+// 保存時にWebhookにリクエストを送る
+// 「設定」>「一般」>「保存時にリクエストを送るWebhookのURL」
+add_action('save_post', function() {
+  global $field_id_webhook;
+  $urls = explode(',', str_replace(' ', '', get_option($field_id_webhook)));
+  foreach ($urls as $url) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($ch, CURLOPT_POSTFIELDS, []);
+    curl_exec($ch);
+    curl_close($ch);
+  }
+});
