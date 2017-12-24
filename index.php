@@ -1,4 +1,5 @@
 <?php
+// Redirect if specified
 $url = explode(',', str_replace(' ', '', get_option('redirect_url')))[0];
 if ($url !== '') {
   header('Location: ' . esc_url($url));

@@ -32,9 +32,7 @@ $fields = [
   ]
 ];
 
-// 「設定」>「一般」>「REST APIへのリクエストを許可するオリジン」
-// 「設定」>「一般」>「保存時にリクエストを送るWebhookのURL」
-// 「設定」>「一般」>「ページへのリクエストに対するリダイレクトURL」
+// Add fields to the setting page
 add_filter('admin_init', function() {
   global $fields;
   foreach ($fields as $field) {
@@ -50,25 +48,17 @@ add_filter('admin_init', function() {
   }
 });
 
-// WP REST APIを利用するリクエストでのみ発火するフック
+// Allow use of REST API only for the specified origins
+// Note: There's no slash at the end of the request origin
 add_action('rest_api_init', function() {
-  // rest_pre_serve_requestフィルターから
-  // 元々設定されている関数rest_send_cors_headersを解除
   remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
-  // rest_pre_serve_requestフィルターに新しく関数を設定
   add_filter('rest_pre_serve_request', function($value) {
     global $fields;
-    // リクエスト元のオリジンを取得
     $origin = get_http_origin();
-    // リクエスト許可ドメイン一覧の中にリクエスト元のオリジンが存在する場合
     if ($origin && in_array(
       $origin,
-      // リクエスト許可ドメインのリスト
-      // 「設定」>「一般」>「WP REST APIへのリクエストを許可するオリジン」
-      // $originは末尾の/が無いことに注意
       explode(',', str_replace(' ', '', get_option($fields['origin']['id'])))
     )) {
-      // リクエスト元のオリジンをAccess-Control-Allow-Originに設定
       header('Access-Control-Allow-Origin: ' . esc_url($origin));
       header('Access-Control-Allow-Methods: GET, OPTIONS');
       header('Access-Control-Allow-Credentials: true');
@@ -77,8 +67,7 @@ add_action('rest_api_init', function() {
   });
 }, 15);
 
-// 保存時にWebhookにリクエストを送る
-// 「設定」>「一般」>「保存時にリクエストを送るWebhookのURL」
+// Send a post request to webhooks when saving posts
 add_action('save_post', function() {
   global $fields;
   $urls = explode(',', str_replace(' ', '', get_option($fields['webhook']['id'])));
