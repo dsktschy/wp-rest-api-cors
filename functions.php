@@ -17,15 +17,13 @@ add_filter('admin_init', function() {
 // Allow use of REST API only for the specified origins
 // Note: There's no slash at the end of the request origin
 add_action('rest_api_init', function() {
+  if (get_option(Restapi::$settingsFields['origin']['id']) === '') return;
   remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
   add_filter('rest_pre_serve_request', function($value) {
     $origin = get_http_origin();
-    if ($origin && in_array(
-      $origin,
-      explode(',', str_replace(' ', '', get_option(
-        Restapi::$settingsFields['origin']['id']
-      )))
-    )) {
+    if ($origin && in_array($origin, explode(',', str_replace(
+      ' ', '', get_option(Restapi::$settingsFields['origin']['id'])
+    )))) {
       header('Access-Control-Allow-Origin: ' . esc_url($origin));
       header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
       header('Access-Control-Allow-Credentials: true');
@@ -36,9 +34,9 @@ add_action('rest_api_init', function() {
 
 // Send a post request to webhooks when saving posts
 add_action('save_post', function() {
-  $urls = explode(',', str_replace(' ', '', get_option(
-    Restapi::$settingsFields['webhook']['id']
-  )));
+  $option = get_option(Restapi::$settingsFields['webhook']['id']);
+  if ($option === '') return;
+  $urls = explode(',', str_replace(' ', '', $option));
   foreach ($urls as $url) {
     $ch = curl_init(esc_url($url));
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
@@ -50,10 +48,9 @@ add_action('save_post', function() {
 
 // Redirect requests to pages if specified
 add_action('template_redirect', function() {
-  $url = explode(',', str_replace(' ', '', get_option(
-    Restapi::$settingsFields['redirection']['id']
-  )))[0];
-  if ($url === '') return;
+  $option = get_option(Restapi::$settingsFields['redirection']['id']);
+  if ($option === '') return;
+  $url = explode(',', str_replace(' ', '', $option))[0];
   header('Location: ' . esc_url($url), true, 301);
   exit;
 });
