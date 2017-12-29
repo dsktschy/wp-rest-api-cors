@@ -48,6 +48,16 @@ add_action('save_post', function() {
   }
 });
 
+// Redirect requests to pages if specified
+add_action('template_redirect', function() {
+  $url = explode(',', str_replace(' ', '', get_option(
+    Restapi::$settingsFields['redirection']['id']
+  )))[0];
+  if ($url === '') return;
+  header('Location: ' . esc_url($url), true, 301);
+  exit;
+});
+
 // Class as a namespace
 class Restapi
 {
