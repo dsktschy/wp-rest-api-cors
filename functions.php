@@ -32,20 +32,6 @@ add_action('rest_api_init', function() {
   });
 }, 15);
 
-// Send a post request to webhooks when saving posts
-add_action('save_post', function() {
-  $option = get_option(Restapi::$settingsFields['webhook']['id']);
-  if ($option === '') return;
-  $urls = explode(',', str_replace(' ', '', $option));
-  foreach ($urls as $url) {
-    $ch = curl_init(esc_url($url));
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-    curl_setopt($ch, CURLOPT_POSTFIELDS, []);
-    curl_exec($ch);
-    curl_close($ch);
-  }
-});
-
 // Redirect requests to pages if specified
 add_action('template_redirect', function() {
   $option = get_option(Restapi::$settingsFields['redirection']['id']);
@@ -54,6 +40,10 @@ add_action('template_redirect', function() {
   header('Location: ' . esc_url($url), true, 301);
   exit;
 });
+
+// Send pings also when saving pages and trashing posts and pages
+add_filter('publish_page', ['Restapi', 'doPings']);
+add_action('wp_trash_post', ['Restapi', 'doPings']);
 
 // Class as a namespace
 class Restapi
@@ -64,16 +54,6 @@ class Restapi
       'title' => [
         'en' => 'Origins allowed requests to REST API',
         'ja' => 'REST APIへのリクエストを許可するオリジン'
-      ],
-      'callback' => ['Restapi', 'echoInput'],
-      'page' => 'general',
-      'section' => 'default'
-    ],
-    'webhook' => [
-      'id' => 'webhook_url',
-      'title' => [
-        'en' => 'Webhook URL when saving posts',
-        'ja' => '保存時にリクエストを送るWebhookのURL'
       ],
       'callback' => ['Restapi', 'echoInput'],
       'page' => 'general',
@@ -96,5 +76,11 @@ class Restapi
     $id = $args['id'];
     $value = esc_html(get_option($id));
     echo "<input name=\"$id\" id=\"$id\" type=\"text\" value=\"$value\" class=\"regular-text code\">";
+  }
+  // Send pings
+  static public function doPings()
+  {
+    if (wp_next_scheduled('do_pings')) return;
+    wp_schedule_single_event(time(), 'do_pings');
   }
 }
