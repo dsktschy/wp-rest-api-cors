@@ -45,7 +45,7 @@ add_action('rest_api_init', function() {
 // Class as a namespace
 class WpRestApiCors
 {
-  static public $fieldId = 'access_control_allow_origin';
+  static public $fieldId = 'wp_rest_api_cors';
   static public $fieldPage = 'general';
   // Outputs an input element with initial value
   static public function echoField(array $args)
