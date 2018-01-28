@@ -34,7 +34,7 @@ add_action('rest_api_init', function() {
     $origin = get_http_origin();
     if ($origin && in_array($origin, array_map(
       ['WpRestApiCors', 'encodeSpace'],
-      array_map('trim', explode(',', $option))
+      array_map('trim', explode("\n", $option))
     ))) {
       header('Access-Control-Allow-Origin: ' . esc_url($origin));
       header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -54,7 +54,7 @@ class WpRestApiCors
   {
     $id = $args['id'];
     $value = esc_html(get_option($id));
-    echo "<input name=\"$id\" id=\"$id\" type=\"text\" value=\"$value\" class=\"regular-text code\">";
+    echo "<textarea name=\"$id\" id=\"$id\" rows=\"2\" class=\"large-text code\">$value</textarea>";
   }
   // Encode spaces
   static public function encodeSpace($url)
