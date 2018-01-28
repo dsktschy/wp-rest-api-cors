@@ -27,13 +27,15 @@ add_filter('admin_init', function() {
 // Allow use of REST API only for the specified origins
 // Note: There's no slash at the end of the request origin
 add_action('rest_api_init', function() {
-  if (get_option(WpRestApiCors::$fieldId) === '') return;
+  $option = get_option(WpRestApiCors::$fieldId);
+  if ($option === '') return;
   remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
-  add_filter('rest_pre_serve_request', function($value) {
+  add_filter('rest_pre_serve_request', function($value) use ($option) {
     $origin = get_http_origin();
-    if ($origin && in_array($origin, explode(',', str_replace(
-      ' ', '', get_option(WpRestApiCors::$fieldId)
-    )))) {
+    if ($origin && in_array($origin, array_map(
+      ['WpRestApiCors', 'encodeSpace'],
+      array_map('trim', explode(',', $option))
+    ))) {
       header('Access-Control-Allow-Origin: ' . esc_url($origin));
       header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
       header('Access-Control-Allow-Credentials: true');
@@ -53,5 +55,10 @@ class WpRestApiCors
     $id = $args['id'];
     $value = esc_html(get_option($id));
     echo "<input name=\"$id\" id=\"$id\" type=\"text\" value=\"$value\" class=\"regular-text code\">";
+  }
+  // Encode spaces
+  static public function encodeSpace($url)
+  {
+    return str_replace(' ', '%20', $url);
   }
 }
